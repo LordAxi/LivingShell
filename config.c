@@ -1,10 +1,13 @@
 #include "config.h"
 #include "./lib/error_handler/error_handler.h"
+#include "./lib/shell_specs/shell_specs.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include "./lib/toml17/tomlc17.h"
+
+#define MAX_ARGS 64
 
 typedef struct {
     const char* key;
@@ -12,10 +15,22 @@ typedef struct {
 } ConfigMapping;
 
 
+char *var_of(char *arg) {
+    if (getenv(arg) != NULL) {
+        return getenv("USER");
+    }
+    else if (get_shell_spec(arg) != NULL) {
+        return get_shell_spec(arg);
+    }
+    else {
+        return arg;
+    }
+}
+
 CONFIG get_config(void) {
     CONFIG config;
 
-    char *home = getenv("HOME"); //!can be null implement error / fallback etc.
+    char *home = getenv("HOME");
 
     if (home == NULL) {
         error(ERROR, "Home folder could NOT be automatically identified", true);
@@ -43,6 +58,9 @@ CONFIG get_config(void) {
         {NULL,              NULL} 
     };
 
+    
+     // TODO: use dynamic size
+
     for (int i = 0; mappings[i].key != NULL; i++) {
         
         toml_datum_t buffer = toml_seek(result.toptab, mappings[i].key);
@@ -52,7 +70,31 @@ CONFIG get_config(void) {
             
             *mappings[i].target_ptr = malloc(strlen(buffer.u.s) + 1);
             if (*mappings[i].target_ptr != NULL) {
-                strcpy(*mappings[i].target_ptr, buffer.u.s);
+                
+                char* temp = malloc(strlen(buffer.u.s) +1);
+                strcpy(temp, buffer.u.s);
+                
+                
+                char* token = strtok(temp, "{}");
+
+                int n = 0;
+                for (int j = 1; token != NULL; j++) {
+                    n += strlen(var_of(token));
+                    token = strtok(NULL, "{}");
+                }
+                strcpy(temp, buffer.u.s);
+                char* token2 = strtok(temp, "{}");
+
+                char *config_inc_vars = malloc(n +1);
+                strcpy(config_inc_vars, "");
+
+                for (int j = 1; token2 != NULL; j++) {
+                    sprintf(config_inc_vars + strlen(config_inc_vars), "%s", var_of(token2));
+                    token2 = strtok(NULL, "{}");
+                }
+
+                strcpy(*mappings[i].target_ptr, config_inc_vars);
+                //free(result);
             }
         }
     }

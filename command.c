@@ -79,11 +79,16 @@ char **parse_command(char input[]) {
     args = parse_input(input);
     if (strcmp(args[0], "quit") == 0) {
         args[0] = "LSH";
-        args[1] = "QUIT";
+        args[1] = "quit";
     }
     else if (strcmp(args[0], "clear") == 0) {
         args[0] = "LSH";
-        args[1] = "CLEAR";
+        args[1] = "clear";
+    }
+    else if (strcmp(args[0], "cd") == 0) {
+        args[2] = args[1];
+        args[0] = "LSH";
+        args[1] = "cd";
     }
     return args;      
 }
@@ -91,7 +96,7 @@ char **parse_command(char input[]) {
 int run_command(char **args) {
     if (strcmp(args[0], "LSH") == 0) {
         // internal command
-        char *available_commands[] = {"QUIT", "CLEAR", NULL};
+        char *available_commands[] = {"quit", "clear", "cd", NULL};
         
         COMMAND id;
         for (int i = 0; available_commands[i] != NULL; i++) {
@@ -106,6 +111,15 @@ int run_command(char **args) {
                 break;
             case CLEAR:  
                 printf("\033[2J\033[H");
+                return 0;
+                break;
+            case CD:
+                if(chdir(args[2]) < 0) {
+                   
+                    
+                    error(ERROR, args[2], false);
+                    
+                }
                 return 0;
                 break;
         }

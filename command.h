@@ -5,6 +5,7 @@
 typedef enum  {
         QUIT,
         CLEAR,
+        CD,
 } COMMAND;
 
 char **parse_command(char input[]);
